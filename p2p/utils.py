@@ -1,3 +1,5 @@
+from builtins import str
+from builtins import range
 import iso8601
 import re
 import pytz
@@ -18,10 +20,10 @@ def slugify(value):
     From Django's "django/template/defaultfilters.py".
     """
     import unicodedata
-    if not isinstance(value, unicode):
-        value = unicode(value)
+    if not isinstance(value, str):
+        value = str(value)
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = unicode(_slugify_strip_re.sub('', value).strip().lower())
+    value = str(_slugify_strip_re.sub('', value).strip().lower())
     return _slugify_hyphenate_re.sub('-', value)
 
 
@@ -32,20 +34,20 @@ def dict_to_qs(dictionary):
     """
     qs = list()
 
-    for k, v in dictionary.items():
+    for k, v in list(dictionary.items()):
         if isinstance(v, dict):
-            for k2, v2 in v.items():
-                if type(v2) in (str, unicode, int, float, bool):
+            for k2, v2 in list(v.items()):
+                if type(v2) in (str, str, int, float, bool):
                     qs.append("%s[%s]=%s" % (k, k2, v2))
                 elif type(v2) in (list, tuple):
                     for v3 in v2:
                         qs.append("%s[%s][]=%s" % (k, k2, v3))
                 elif type(v2) == dict:
-                    for k3, v3 in v2.items():
+                    for k3, v3 in list(v2.items()):
                         qs.append("%s[%s][%s]=%s" % (k, k2, k3, v3))
                 else:
                     raise TypeError
-        elif type(v) in (str, unicode, int, float, bool):
+        elif type(v) in (str, str, int, float, bool):
             qs.append("%s=%s" % (k, v))
         elif type(v) in (list, tuple):
             for v2 in v:
@@ -61,7 +63,7 @@ def parse_response(resp):
     Recurse through a dictionary from an API call, and fix weird values,
     convert date strings to objects, etc.
     """
-    if type(resp) in (str, unicode):
+    if type(resp) in (str, str):
         if resp in ("null", "Null"):
             # Null value as a string
             return None
@@ -73,7 +75,7 @@ def parse_response(resp):
             return parsedate(resp)
     elif type(resp) is dict:
         # would use list comprehension, but that makes unnecessary copies
-        for k, v in resp.items():
+        for k, v in list(resp.items()):
             resp[k] = parse_response(v)
     elif type(resp) is list:
         # would use list comprehension, but that makes unnecessary copies
@@ -92,7 +94,7 @@ def parse_request(data):
         return formatdate(data)
     elif type(data) is dict:
         # would use list comprehension, but that makes unnecessary copies
-        for k, v in data.items():
+        for k, v in list(data.items()):
             data[k] = parse_request(v)
     elif type(data) is list:
         # would use list comprehension, but that makes unnecessary copies
@@ -128,7 +130,7 @@ def request_to_curl(request):
         request.headers["Authorization"] = "Bearer P2P_API_KEY_REDACTED"
 
     # Format the headers
-    headers = ['"{0}: {1}"'.format(k, v) for k, v in request.headers.items()]
+    headers = ['"{0}: {1}"'.format(k, v) for k, v in list(request.headers.items())]
     headers = " -H ".join(headers)
 
     # Return the formatted curl command.

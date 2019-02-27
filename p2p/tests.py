@@ -1,3 +1,4 @@
+from builtins import range
 import pprint
 import unittest
 from p2p import (
@@ -156,11 +157,11 @@ class StoryAndPhotoTest(BaseP2PTest):
         # Story
         data = self.p2p.get_content_item(self.first_test_story_slug)
         for k in self.content_item_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
         # HTML story
         data = self.p2p.get_content_item(self.test_htmlstory_slug)
         for k in self.content_item_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
     def test_related_items(self):
         # Add
@@ -337,7 +338,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         self.assertIn(
             'html_story',
-            result.keys()
+            list(result.keys())
         )
         res = result['html_story']
         self.assertEqual(res['slug'], data['slug'])
@@ -368,7 +369,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         self.assertIn(
             'html_story',
-            result.keys()
+            list(result.keys())
         )
         res = result['html_story']
         self.assertEqual(res['slug'], data['slug'])
@@ -430,7 +431,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         # Ensure the first item has all the keys we expect
         for k in self.content_item_keys:
-            self.assertIn(k, data[0].keys())
+            self.assertIn(k, list(data[0].keys()))
 
         # Loop through each content item and ensure the ID
         # matches what was passed in to get_multi_content_items
@@ -766,16 +767,16 @@ class CollectionTest(BaseP2PTest):
     def test_get_collection(self):
         data = self.p2p.get_collection(self.first_test_collection_code)
         for k in self.collection_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
     def test_get_collection_layout(self):
         data = self.p2p.get_collection_layout(self.first_test_collection_code)
 
         for k in self.content_layout_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
         for k in self.content_layout_item_keys:
-            self.assertIn(k, data['items'][0].keys())
+            self.assertIn(k, list(data['items'][0].keys()))
 
     def test_fancy_collection(self):
         data = self.p2p.get_fancy_collection(
@@ -784,15 +785,15 @@ class CollectionTest(BaseP2PTest):
         )
 
         for k in self.content_layout_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
         for k in self.collection_keys:
-            self.assertIn(k, data['collection'].keys())
+            self.assertIn(k, list(data['collection'].keys()))
 
         self.assertTrue(len(data['items']) > 0)
 
         for k in self.content_layout_item_keys:
-            self.assertIn(k, data['items'][0].keys())
+            self.assertIn(k, list(data['items'][0].keys()))
 
     def test_that_unique_contraint_exception_is_raised(self):
         """
@@ -891,7 +892,7 @@ class CollectionTest(BaseP2PTest):
         data = self.p2p.get_multi_content_items(ci_ids)
         self.assertTrue(len(ci_ids) == len(data))
         for k in self.content_item_keys:
-            self.assertIn(k, data[0].keys())
+            self.assertIn(k, list(data[0].keys()))
 
     def test_that_converting_to_array_works(self):
         """

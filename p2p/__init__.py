@@ -1,20 +1,39 @@
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import re
 import json
 import math
-import utils
 import logging
 import requests
 import warnings
 from time import mktime
 from copy import deepcopy
-from cache import NoCache
-from decorators import retry
 from datetime import datetime
 from datetime import date
+from p2p import utils
+from p2p.cache import NoCache
+from p2p.decorators import retry
 from .adapters import TribAdapter
 from .filters import get_custom_param_value
 from wsgiref.handlers import format_date_time
+
+try:
+    unicode = unicode
+except NameError:
+    # 'unicode' is undefined, must be Python 3
+    str = str
+    unicode = str
+    bytes = bytes
+    basestring = (str,bytes)
+else:
+    # 'unicode' exists, must be Python 2
+    str = str
+    unicode = unicode
+    bytes = str
+    basestring = basestring
+
 from .errors import (
     P2PException,
     P2PFileError,
@@ -1413,60 +1432,63 @@ class P2P(object):
         exception is raised, its message will contain the response url, a curl
         string of the request and a dictionary of response data.
         """
-        curl = utils.request_to_curl(resp.request)
+        curl = ''
         request_log = {
-            'REQ_URL': req_url,
-            'REQ_HEADERS': self.http_headers(),
-            'RESP_URL': resp.url,
-            'STATUS': resp.status_code,
-            'RESP_BODY': resp.content,
-            'RESP_HEADERS': resp.headers,
-            # The time taken between sending the first byte of
-            # the request and finishing parsing the response headers
-            'SECONDS_ELAPSED': resp.elapsed.total_seconds()
-        }
+                'REQ_URL': req_url,
+                'REQ_HEADERS': self.http_headers(),
+                'RESP_URL': resp.url,
+                'STATUS': resp.status_code,
+                'RESP_BODY': resp.content,
+                'RESP_HEADERS': resp.headers,
+                # The time taken between sending the first byte of
+                # the request and finishing parsing the response headers
+                'SECONDS_ELAPSED': resp.elapsed.total_seconds()
+            }
 
         if self.debug:
+            curl = utils.request_to_curl(resp.request)
             log.debug("[P2P][RESPONSE] %s" % request_log)
+
+        resp_content = self.convert_response_bytes_to_string(resp)
 
         if resp.status_code >= 500:
             try:
-                if u'ORA-00001: unique constraint' in resp.content:
+                if u'ORA-00001: unique constraint' in resp_content:
                     raise P2PUniqueConstraintViolated(resp.url, request_log, \
 curl)
-                elif u'incompatible encoding regexp match' in resp.content:
+                elif u'incompatible encoding regexp match' in resp_content:
                     raise P2PEncodingMismatch(resp.url, request_log, curl)
-                elif u'unknown attribute' in resp.content:
+                elif u'unknown attribute' in resp_content:
                     raise P2PUnknownAttribute(resp.url, request_log, curl)
-                elif u"Invalid access definition" in resp.content:
+                elif u"Invalid access definition" in resp_content:
                     raise P2PInvalidAccessDefinition(resp.url, request_log, \
 curl)
-                elif u"solr.tila.trb" in resp.content:
+                elif u"solr.tila.trb" in resp_content:
                     raise P2PSearchError(resp.url, request_log, curl)
-                elif u"Request Timeout" in resp.content:
+                elif u"Request Timeout" in resp_content:
                     raise P2PTimeoutError(resp.url, request_log, curl)
-                elif u'Duplicate entry' in resp.content:
+                elif u'Duplicate entry' in resp_content:
                     raise P2PUniqueConstraintViolated(resp.url, request_log, \
 curl)
                 elif (u'Failed to upload image to the photo service'
-                        in resp.content):
+                        in resp_content):
                     raise P2PPhotoUploadError(resp.url, request_log, curl)
-                elif u"This file type is not supported" in resp.content:
+                elif u"This file type is not supported" in resp_content:
                     raise P2PInvalidFileType(resp.url, request_log, curl)
-                elif re.search(r"The URL (.*) does not exist", resp.content):
+                elif re.search(r"The URL (.*) does not exist", resp_content):
                     raise P2PFileURLNotFound(resp.url, request_log)
 
                 data = resp.json()
 
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
             raise P2PException(resp.url, request_log, curl)
         elif resp.status_code == 404:
             raise P2PNotFound(resp.url, request_log, curl)
         elif resp.status_code >= 400:
-            if u'{"slug":["has already been taken"]}' in resp.content:
+            if u'{"slug":["has already been taken"]}' in resp_content:
                 raise P2PSlugTaken(resp.url, request_log, curl)
-            elif u'{"code":["has already been taken"]}' in resp.content:
+            elif u'{"code":["has already been taken"]}' in resp_content:
                 raise P2PSlugTaken(resp.url, request_log, curl)
             elif resp.status_code == 403:
                 raise P2PForbidden(resp.url, request_log, curl)
@@ -1474,8 +1496,12 @@ curl)
                 resp.json()
             except ValueError:
                 pass
-            raise P2PException(resp.content, request_log, curl)
+            raise P2PException(resp_content, request_log, curl)
         return request_log
+
+    def convert_response_bytes_to_string(self, response):
+        if str(type(response.content)) == "<class 'bytes'>":
+            return response.content.decode("utf-8") 
 
     @retry(P2PRetryableError)
     def get(self, url, query=None, if_modified_since=None):
@@ -1499,8 +1525,10 @@ curl)
 
         # The API returns "Content item exists" when the /exists endpoint is called
         # causing everything to go bonkers, Why do you do this!!!
-        if resp.content == "Content item exists":
-            return resp.content
+        resp_content = self.convert_response_bytes_to_string(resp)
+        
+        if resp_content == "Content item exists":
+            return resp_content
 
         try:
             ret = utils.parse_response(resp.json())
@@ -1527,8 +1555,10 @@ curl)
         else:
             log.debug("[P2P][DELETE] %s" % url)
 
+        resp_content = self.convert_response_bytes_to_string(resp)
+
         self._check_for_errors(resp, url)
-        return utils.parse_response(resp.content)
+        return utils.parse_response(resp_content)
 
     @retry(P2PRetryableError)
     def post_json(self, url, data):
@@ -1547,9 +1577,10 @@ curl)
         else:
             log.debug("[P2P][POST] %s" % url)
 
+        resp_content = self.convert_response_bytes_to_string(resp)
         resp_log = self._check_for_errors(resp, url)
 
-        if resp.content == "" and resp.status_code < 400:
+        if resp_content == "" and resp.status_code < 400:
             return {}
         else:
             try:
@@ -1575,9 +1606,10 @@ curl)
         else:
             log.debug("[P2P][PUT] %s" % url)
 
+        resp_content = self.convert_response_bytes_to_string(resp)
         resp_log = self._check_for_errors(resp, url)
 
-        if resp.content == "" and resp.status_code < 400:
+        if resp_content == "" and resp.status_code < 400:
             return {}
         else:
             try:

@@ -1,6 +1,8 @@
 # (almost) pure python
+from builtins import str
+from builtins import object
 from copy import deepcopy
-import utils
+from p2p import utils
 
 
 class BaseCache(object):
@@ -265,7 +267,7 @@ class DictionaryCache(BaseCache):
             return self.log[type].copy() if type in self.log else None
         else:
             keyname = self.make_key(type, id)
-            return self.log[keyname].values() if keyname in self.log else None
+            return list(self.log[keyname].values()) if keyname in self.log else None
 
     def log_remove(self, type, id, query):
         if type in self.log:
@@ -345,7 +347,7 @@ try:
         def log_key(self, type, id, query):
             pass
 
-except ImportError, e:
+except ImportError:
     pass
 
 try:
@@ -526,5 +528,5 @@ try:
         def clear(self):
             self.r.flushdb()
 
-except ImportError, e:
+except ImportError:
     pass
