@@ -36,7 +36,7 @@ def dict_to_qs(dictionary):
 
     for k, v in list(dictionary.items()):
         if isinstance(v, dict):
-            for k2, v2 in list(v.items()):
+            for k2, v2 in v.items():
                 if type(v2) in (str, str, int, float, bool):
                     qs.append("%s[%s]=%s" % (k, k2, v2))
                 elif type(v2) in (list, tuple):
@@ -75,7 +75,7 @@ def parse_response(resp):
             return parsedate(resp)
     elif type(resp) is dict:
         # would use list comprehension, but that makes unnecessary copies
-        for k, v in list(resp.items()):
+        for k, v in resp.items():
             resp[k] = parse_response(v)
     elif type(resp) is list:
         # would use list comprehension, but that makes unnecessary copies
@@ -94,7 +94,7 @@ def parse_request(data):
         return formatdate(data)
     elif type(data) is dict:
         # would use list comprehension, but that makes unnecessary copies
-        for k, v in list(data.items()):
+        for k, v in data.items():
             data[k] = parse_request(v)
     elif type(data) is list:
         # would use list comprehension, but that makes unnecessary copies
@@ -130,7 +130,7 @@ def request_to_curl(request):
         request.headers["Authorization"] = "Bearer P2P_API_KEY_REDACTED"
 
     # Format the headers
-    headers = ['"{0}: {1}"'.format(k, v) for k, v in list(request.headers.items())]
+    headers = ['"{0}: {1}"'.format(k, v) for k, v in request.headers.items()]
     headers = " -H ".join(headers)
 
     # Return the formatted curl command.

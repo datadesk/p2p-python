@@ -1,6 +1,6 @@
 .PHONY: test ship testcollectionsearch
 
-name='foo'
+name='StoryAndPhotoTest.test_create_or_update_content_item_with_topics'
 
 test:
 	clear
