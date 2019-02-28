@@ -273,7 +273,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
     def test_clone_delete_content_item(self):
         # The content item to clone
-        slug = "ct-test-story-787-20170106"
+        slug = self.first_test_story_slug
 
         # Why? Why does this give a different web url
         # than in the default query?
@@ -292,9 +292,21 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.p2p.delete_content_item(clone_id)
 
         # Check that everything is ok
-        self.assertNotEqual(clone['slug'], original_item['slug'], "Cloned content item's slug should not match the original content item's slug")
-        self.assertEqual(clone['title'], original_item['title'], "Cloned content item's title should match the original content item's title")
-        self.assertEqual(clone['canonical_url'], original_item['web_url'], "Cloned content item's canonical url should match the original content item's web url")
+        self.assertNotEqual(
+            clone['slug'],
+            original_item['slug'],
+            "Cloned content item's slug should not match the original content item's slug"
+        )
+        self.assertEqual(
+            clone['title'],
+            original_item['title'],
+            "Cloned content item's title should match the original content item's title"
+        )
+        self.assertEqual(
+            clone['canonical_url'],
+            original_item['web_url'],
+            "Cloned content item's canonical url should match the original content item's web url"
+        )
 
     def test_content_item_exists(self):
         slug = 'la_na_test_content_item_exists'
