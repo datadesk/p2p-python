@@ -175,7 +175,12 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.assertEqual(len(data["related_items"]), 0)
 
     def test_embedded_items(self):
-        # Add
+        # Clear out any embedded items
+        self.p2p.remove_embed_from_content_item(
+            self.test_htmlstory_slug,
+            [self.first_test_story_slug, self.test_photo_slug]
+        )
+        # Add embedded items
         self.p2p.push_embed_into_content_item(
             self.test_htmlstory_slug,
             [self.first_test_story_slug],
