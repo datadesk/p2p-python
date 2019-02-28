@@ -6,6 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=(
         "python-dateutil",
+        "future",
         "requests",
         "iso8601",
         "pytz",

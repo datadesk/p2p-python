@@ -1500,8 +1500,16 @@ curl)
         return request_log
 
     def convert_response_bytes_to_string(self, response):
-        if str(type(response.content)) == "<class 'bytes'>":
-            return response.content.decode("utf-8") 
+        vartype = str(type(response.content))
+        if vartype == "<class 'bytes'>":
+            # Convert to str
+            return response.content.decode("utf-8")
+        elif vartype == "<class 'str'>":
+            # It's already a str, just return it
+            return response.content
+
+        # It is not a string type, return empty
+        return ''
 
     @retry(P2PRetryableError)
     def get(self, url, query=None, if_modified_since=None):
