@@ -320,7 +320,6 @@ class P2P(object):
         parameter in case the dictionary does not contain a 'slug' key or if
         the dictionary contains a changed slug.
         """
-        print(payload.keys())
         content = payload.copy()
 
         # Check if content_item is nested or if this is a flat data structure
@@ -347,8 +346,6 @@ class P2P(object):
         url = url % slug
         if not self.preserve_embedded_tags:
             url += "?preserve_embedded_tags=false"
-
-        print(data.keys())
 
         resp = self.put_json(url, data)
 
