@@ -10,7 +10,7 @@ test:
 		coverage report -m;\
 	else \
 		echo "Running provided test";\
-		python -m unittest p2p.tests.TestP2P.$(name);\
+		python -m unittest p2p.tests.$(name);\
 	fi
 
 ship:

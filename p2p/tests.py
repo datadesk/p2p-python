@@ -51,8 +51,16 @@ class BaseP2PTest(unittest.TestCase):
     first_test_collection_code = "la-test-p2p-python-collection-0"
     second_test_collection_code = "la-test-p2p-python-collection-1"
 
+
     @classmethod
     def setUpTestStories(cls):
+        # Make sure everything is cleared out first
+        for slug in cls.test_story_slugs:
+            try:
+                cls.p2p.delete_collection(slug)
+            except P2PNotFound:
+                pass
+
         # Create a bunch of test stories and store to self.test_story_slugs
         for slug in cls.test_story_slugs:
             cls.p2p.create_or_update_content_item({
@@ -65,6 +73,12 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestHTMLStories(cls):
+        # Make sure everything is cleared out first
+        try:
+            cls.p2p.delete_content_item(cls.test_htmlstory_slug)
+        except P2PNotFound:
+                pass
+
         # Create a test htmlstory
         cls.p2p.create_or_update_content_item({
             "slug": cls.test_htmlstory_slug,
@@ -75,6 +89,12 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestPhoto(cls):
+        # Make sure everything is cleared out first
+        try:
+            cls.p2p.delete_content_item(cls.test_photo_slug)
+        except P2PNotFound:
+                pass
+
         # Create a test htmlstory
         cls.p2p.create_or_update_content_item({
             "slug": cls.test_photo_slug,
@@ -84,6 +104,13 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestCollections(cls):
+        # Make sure everything is cleared out first
+        for slug in cls.test_collection_codes:
+            try:
+                cls.p2p.delete_collection(slug)
+            except P2PNotFound:
+                pass
+
         for slug in cls.test_collection_codes:
             try:
                 cls.p2p.get_collection_layout(slug)
@@ -470,6 +497,11 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.assertEqual(type(data), dict)
 
     def test_create_delete_collection(self):
+        try:
+            self.p2p.delete_collection('la_test_api_create')
+        except P2PNotFound:
+            pass
+
         data = self.p2p.create_collection({
             'code': 'la_test_api_create',
             'name': 'Test collection created via API',
@@ -490,11 +522,14 @@ class StoryAndPhotoTest(BaseP2PTest):
         # Create dummy collection
         collection_code = "la_test_search_collections"
         collection_name = "Collection to test search functionality"
-        data = self.p2p.create_collection({
-            'code': collection_code,
-            'name': collection_name,
-            'section_path': '/test'
-        })
+        try:
+            data = self.p2p.create_collection({
+                'code': collection_code,
+                'name': collection_name,
+                'section_path': '/test'
+            })
+        except P2PSlugTaken:
+            pass
 
         # Get results from collection search, check we can get a name from it
         results = self.p2p.search_collections(collection_code)
@@ -770,6 +805,22 @@ class CollectionTest(BaseP2PTest):
             self.assertIn(k, list(data.keys()))
 
     def test_get_collection_layout(self):
+        test_item = {
+            'slug': 'la_na_test_two_collections',
+            'title': 'Testing updating collections in content items',
+            'body': 'lorem ipsum 6',
+            'content_item_type_code': 'story',
+        }
+
+        try:
+            self.p2p.create_content_item(test_item)
+        except P2PSlugTaken:
+            pass
+
+        self.p2p.push_into_collection(
+            self.first_test_collection_code, [test_item['slug']]
+        )
+
         data = self.p2p.get_collection_layout(self.first_test_collection_code)
 
         for k in self.content_layout_keys:
@@ -778,7 +829,25 @@ class CollectionTest(BaseP2PTest):
         for k in self.content_layout_item_keys:
             self.assertIn(k, list(data['items'][0].keys()))
 
+        self.p2p.delete_content_item(test_item['slug'])
+
     def test_fancy_collection(self):
+        test_item = {
+            'slug': 'la_na_test_two_collections',
+            'title': 'Testing updating collections in content items',
+            'body': 'lorem ipsum 6',
+            'content_item_type_code': 'story',
+        }
+
+        try:
+            self.p2p.create_content_item(test_item)
+        except P2PSlugTaken:
+            pass
+
+        self.p2p.push_into_collection(
+            self.first_test_collection_code, [test_item['slug']]
+        )
+
         data = self.p2p.get_fancy_collection(
             self.first_test_collection_code,
             with_collection=True
@@ -794,6 +863,8 @@ class CollectionTest(BaseP2PTest):
 
         for k in self.content_layout_item_keys:
             self.assertIn(k, list(data['items'][0].keys()))
+
+        self.p2p.delete_content_item(test_item['slug'])
 
     def test_that_unique_contraint_exception_is_raised(self):
         """
