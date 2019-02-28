@@ -161,6 +161,10 @@ class StoryAndPhotoTest(BaseP2PTest):
             },
         })
 
+        # Add content_topics to our content item query
+        query = self.p2p.default_content_item_query
+        query["include"].append("content_topics")
+
         # Make sure the topics were added correctly
         data = self.p2p.get_fancy_content_item(self.first_test_story_slug, query=query)
         self.assertEqual(
