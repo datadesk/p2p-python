@@ -148,7 +148,10 @@ class StoryAndPhotoTest(BaseP2PTest):
         })
 
     def test_update_content_item_with_topics(self):
-        topics = [u'PEBSL000163', "PEPLT007433"]
+        topics = [
+            "PEPLT007408",
+            "OREDU0000173"
+        ]
 
         # Add topics to the story
         self.p2p.update_content_item({
@@ -158,15 +161,12 @@ class StoryAndPhotoTest(BaseP2PTest):
             },
         })
 
-        # Add content_topics to our content item query
-        query = self.p2p.default_content_item_query
-        query["include"].append("content_topics")
-
         # Make sure the topics were added correctly
         data = self.p2p.get_fancy_content_item(self.first_test_story_slug, query=query)
-
-        content_topics = data["content_topics"]
-        self.assertEqual(len(content_topics), 2)
+        self.assertEqual(
+            len(data["content_topics"]),
+            len(topics)
+        )
 
         # Now let's remove the topics
         self.p2p.update_content_item({
@@ -177,9 +177,8 @@ class StoryAndPhotoTest(BaseP2PTest):
         })
 
         # Make sure the topics were removed correctly
-        data = self.p2p.get_fancy_content_item(self.first_test_story_slug, query=query)
-        content_topics = data["content_topics"]
-        self.assertEqual(len(content_topics), 0)
+        data = self.p2p.get_fancy_content_item(self.first_test_story_slug)
+        self.assertEqual(len(data["content_topics"]), 0)
 
     def test_get_content_item(self):
         # Story
@@ -204,7 +203,12 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.assertEqual(len(data["related_items"]), 0)
 
     def test_embedded_items(self):
-        # Add
+        # Clear out any embedded items
+        self.p2p.remove_embed_from_content_item(
+            self.test_htmlstory_slug,
+            [self.first_test_story_slug, self.test_photo_slug]
+        )
+        # Add embedded items
         self.p2p.push_embed_into_content_item(
             self.test_htmlstory_slug,
             [self.first_test_story_slug],
@@ -297,7 +301,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
     def test_clone_delete_content_item(self):
         # The content item to clone
-        slug = "ct-test-story-787-20170106"
+        slug = self.first_test_story_slug
 
         # Why? Why does this give a different web url
         # than in the default query?
@@ -316,9 +320,21 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.p2p.delete_content_item(clone_id)
 
         # Check that everything is ok
-        self.assertNotEqual(clone['slug'], original_item['slug'], "Cloned content item's slug should not match the original content item's slug")
-        self.assertEqual(clone['title'], original_item['title'], "Cloned content item's title should match the original content item's title")
-        self.assertEqual(clone['canonical_url'], original_item['web_url'], "Cloned content item's canonical url should match the original content item's web url")
+        self.assertNotEqual(
+            clone['slug'],
+            original_item['slug'],
+            "Cloned content item's slug should not match the original content item's slug"
+        )
+        self.assertEqual(
+            clone['title'],
+            original_item['title'],
+            "Cloned content item's title should match the original content item's title"
+        )
+        self.assertEqual(
+            clone['canonical_url'],
+            original_item['web_url'],
+            "Cloned content item's canonical url should match the original content item's web url"
+        )
 
     def test_content_item_exists(self):
         slug = 'la_na_test_content_item_exists'
@@ -984,7 +1000,7 @@ class CollectionTest(BaseP2PTest):
             self.first_test_collection_code,
             self.first_test_story_slug
         )
-        
+
         # Then remove with a slug string
         self.p2p.remove_from_collection(
             self.first_test_collection_code,

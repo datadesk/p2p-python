@@ -33,7 +33,11 @@ Or you can create a connection object manually. You'll want to do this in order 
 
 To run tests:
 
-    $ python setup.py test
+    $ make test
+
+To run a single unit test by name:
+
+    $ make test name=StoryAndPhotoTest.test_embedded_item
 
 
 ## Methods on the connection object
