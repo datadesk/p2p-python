@@ -1,4 +1,20 @@
+from builtins import str
 import re
+
+try:
+    unicode = unicode
+except NameError:
+    # 'unicode' is undefined, must be Python 3
+    str = str
+    unicode = str
+    bytes = bytes
+    basestring = (str,bytes)
+else:
+    # 'unicode' exists, must be Python 2
+    str = str
+    unicode = unicode
+    bytes = str
+    basestring = basestring
 
 UNQUERYABLE_PATTERN = re.compile('\.[a-zA-Z]+$')
 QUERY_PATTERN = re.compile('/\d+(/\d+x\d+)?$')
@@ -237,10 +253,10 @@ def force_unicode(s, encoding='utf-8', errors='ignore'):
     try:
         if not isinstance(s, basestring,):
             if hasattr(s, '__unicode__'):
-                s = unicode(s)
+                s = str(s)
             else:
                 try:
-                    s = unicode(str(s), encoding, errors)
+                    s = str(str(s), encoding, errors)
                 except UnicodeEncodeError:
                     if not isinstance(s, Exception):
                         raise
@@ -252,12 +268,12 @@ def force_unicode(s, encoding='utf-8', errors='ignore'):
                     # output should be.
                     s = ' '.join(
                         [force_unicode(arg, encoding, errors) for arg in s])
-        elif not isinstance(s, unicode):
+        elif not isinstance(s, str):
             # Note: We use .decode() here, instead of unicode(s, encoding,
             # errors), so that if s is a SafeString, it ends up being a
             # SafeUnicode at the end.
             s = s.decode(encoding, errors)
-    except UnicodeDecodeError, e:
+    except UnicodeDecodeError as e:
         if not isinstance(s, Exception):
             raise UnicodeDecodeError(s, *e.args)
         else:

@@ -1,3 +1,4 @@
+from builtins import range
 import pprint
 import unittest
 from p2p import (
@@ -50,11 +51,19 @@ class BaseP2PTest(unittest.TestCase):
     first_test_collection_code = "la-test-p2p-python-collection-0"
     second_test_collection_code = "la-test-p2p-python-collection-1"
 
+
     @classmethod
     def setUpTestStories(cls):
+        # Make sure everything is cleared out first
+        for slug in cls.test_story_slugs:
+            try:
+                cls.p2p.delete_content_item(slug)
+            except P2PNotFound:
+                pass
+
         # Create a bunch of test stories and store to self.test_story_slugs
         for slug in cls.test_story_slugs:
-            cls.p2p.create_or_update_content_item({
+            cls.p2p.create_content_item({
                 "slug": slug,
                 "content_item_type_code": "story",
                 "title": "Temporary content item #%s for unittesting" % slug,
@@ -64,6 +73,12 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestHTMLStories(cls):
+        # Make sure everything is cleared out first
+        try:
+            cls.p2p.delete_content_item(cls.test_htmlstory_slug)
+        except P2PNotFound:
+                pass
+
         # Create a test htmlstory
         cls.p2p.create_or_update_content_item({
             "slug": cls.test_htmlstory_slug,
@@ -74,6 +89,12 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestPhoto(cls):
+        # Make sure everything is cleared out first
+        try:
+            cls.p2p.delete_content_item(cls.test_photo_slug)
+        except P2PNotFound:
+                pass
+
         # Create a test htmlstory
         cls.p2p.create_or_update_content_item({
             "slug": cls.test_photo_slug,
@@ -83,6 +104,13 @@ class BaseP2PTest(unittest.TestCase):
 
     @classmethod
     def setUpTestCollections(cls):
+        # Make sure everything is cleared out first
+        for slug in cls.test_collection_codes:
+            try:
+                cls.p2p.delete_collection(slug)
+            except P2PNotFound:
+                pass
+
         for slug in cls.test_collection_codes:
             try:
                 cls.p2p.get_collection_layout(slug)
@@ -119,29 +147,33 @@ class StoryAndPhotoTest(BaseP2PTest):
             "title": "Test HTML story"
         })
 
-    def test_create_or_update_content_item_with_topics(self):
+    def test_update_content_item_with_topics(self):
         topics = [
             "PEPLT007408",
             "OREDU0000173"
         ]
 
         # Add topics to the story
-        self.p2p.create_or_update_content_item({
+        self.p2p.update_content_item({
             "add_topic_ids": topics,
             "content_item": {
                 "slug": self.first_test_story_slug,
             },
         })
 
+        # Add content_topics to our content item query
+        query = self.p2p.default_content_item_query
+        query["include"].append("content_topics")
+
         # Make sure the topics were added correctly
-        data = self.p2p.get_fancy_content_item(self.first_test_story_slug)
+        data = self.p2p.get_fancy_content_item(self.first_test_story_slug, query=query)
         self.assertEqual(
             len(data["content_topics"]),
             len(topics)
         )
 
         # Now let's remove the topics
-        self.p2p.create_or_update_content_item({
+        self.p2p.update_content_item({
             "remove_topic_ids": topics,
             "content_item": {
                 "slug": self.first_test_story_slug,
@@ -156,11 +188,11 @@ class StoryAndPhotoTest(BaseP2PTest):
         # Story
         data = self.p2p.get_content_item(self.first_test_story_slug)
         for k in self.content_item_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
         # HTML story
         data = self.p2p.get_content_item(self.test_htmlstory_slug)
         for k in self.content_item_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
     def test_related_items(self):
         # Add
@@ -354,7 +386,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         self.assertIn(
             'html_story',
-            result.keys()
+            list(result.keys())
         )
         res = result['html_story']
         self.assertEqual(res['slug'], data['slug'])
@@ -385,7 +417,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         self.assertIn(
             'html_story',
-            result.keys()
+            list(result.keys())
         )
         res = result['html_story']
         self.assertEqual(res['slug'], data['slug'])
@@ -447,7 +479,7 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         # Ensure the first item has all the keys we expect
         for k in self.content_item_keys:
-            self.assertIn(k, data[0].keys())
+            self.assertIn(k, list(data[0].keys()))
 
         # Loop through each content item and ensure the ID
         # matches what was passed in to get_multi_content_items
@@ -486,6 +518,11 @@ class StoryAndPhotoTest(BaseP2PTest):
         self.assertEqual(type(data), dict)
 
     def test_create_delete_collection(self):
+        try:
+            self.p2p.delete_collection('la_test_api_create')
+        except P2PNotFound:
+            pass
+
         data = self.p2p.create_collection({
             'code': 'la_test_api_create',
             'name': 'Test collection created via API',
@@ -506,11 +543,14 @@ class StoryAndPhotoTest(BaseP2PTest):
         # Create dummy collection
         collection_code = "la_test_search_collections"
         collection_name = "Collection to test search functionality"
-        data = self.p2p.create_collection({
-            'code': collection_code,
-            'name': collection_name,
-            'section_path': '/test'
-        })
+        try:
+            data = self.p2p.create_collection({
+                'code': collection_code,
+                'name': collection_name,
+                'section_path': '/test'
+            })
+        except P2PSlugTaken:
+            pass
 
         # Get results from collection search, check we can get a name from it
         results = self.p2p.search_collections(collection_code)
@@ -783,33 +823,69 @@ class CollectionTest(BaseP2PTest):
     def test_get_collection(self):
         data = self.p2p.get_collection(self.first_test_collection_code)
         for k in self.collection_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
     def test_get_collection_layout(self):
+        test_item = {
+            'slug': 'la_na_test_two_collections',
+            'title': 'Testing updating collections in content items',
+            'body': 'lorem ipsum 6',
+            'content_item_type_code': 'story',
+        }
+
+        try:
+            self.p2p.create_content_item(test_item)
+        except P2PSlugTaken:
+            pass
+
+        self.p2p.push_into_collection(
+            self.first_test_collection_code, [test_item['slug']]
+        )
+
         data = self.p2p.get_collection_layout(self.first_test_collection_code)
 
         for k in self.content_layout_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
         for k in self.content_layout_item_keys:
-            self.assertIn(k, data['items'][0].keys())
+            self.assertIn(k, list(data['items'][0].keys()))
+
+        self.p2p.delete_content_item(test_item['slug'])
 
     def test_fancy_collection(self):
+        test_item = {
+            'slug': 'la_na_test_two_collections',
+            'title': 'Testing updating collections in content items',
+            'body': 'lorem ipsum 6',
+            'content_item_type_code': 'story',
+        }
+
+        try:
+            self.p2p.create_content_item(test_item)
+        except P2PSlugTaken:
+            pass
+
+        self.p2p.push_into_collection(
+            self.first_test_collection_code, [test_item['slug']]
+        )
+
         data = self.p2p.get_fancy_collection(
             self.first_test_collection_code,
             with_collection=True
         )
 
         for k in self.content_layout_keys:
-            self.assertIn(k, data.keys())
+            self.assertIn(k, list(data.keys()))
 
         for k in self.collection_keys:
-            self.assertIn(k, data['collection'].keys())
+            self.assertIn(k, list(data['collection'].keys()))
 
         self.assertTrue(len(data['items']) > 0)
 
         for k in self.content_layout_item_keys:
-            self.assertIn(k, data['items'][0].keys())
+            self.assertIn(k, list(data['items'][0].keys()))
+
+        self.p2p.delete_content_item(test_item['slug'])
 
     def test_that_unique_contraint_exception_is_raised(self):
         """
@@ -908,7 +984,7 @@ class CollectionTest(BaseP2PTest):
         data = self.p2p.get_multi_content_items(ci_ids)
         self.assertTrue(len(ci_ids) == len(data))
         for k in self.content_item_keys:
-            self.assertIn(k, data[0].keys())
+            self.assertIn(k, list(data[0].keys()))
 
     def test_that_converting_to_array_works(self):
         """

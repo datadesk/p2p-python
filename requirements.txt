@@ -5,6 +5,7 @@ coverage
 python-coveralls
 # Requirements
 iso8601
+future
 python-dateutil
 pytz
 requests

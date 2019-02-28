@@ -1,3 +1,4 @@
+from builtins import object
 import requests
 import json
 from .adapters import TribAdapter
@@ -48,7 +49,7 @@ def authenticate(username=None, password=None, token=None, auth_url=None):
 try:
     from django.contrib.auth.models import User
 
-    class P2PBackend:
+    class P2PBackend(object):
         def authenticate(self, username=None, password=None):
 
             try:
@@ -85,7 +86,7 @@ try:
             except User.DoesNotExist:
                 return None
 
-except ImportError, e:
+except ImportError as e:
     pass
 
 
