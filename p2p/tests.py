@@ -57,13 +57,13 @@ class BaseP2PTest(unittest.TestCase):
         # Make sure everything is cleared out first
         for slug in cls.test_story_slugs:
             try:
-                cls.p2p.delete_collection(slug)
+                cls.p2p.delete_content_item(slug)
             except P2PNotFound:
                 pass
 
         # Create a bunch of test stories and store to self.test_story_slugs
         for slug in cls.test_story_slugs:
-            cls.p2p.create_or_update_content_item({
+            cls.p2p.create_content_item({
                 "slug": slug,
                 "content_item_type_code": "story",
                 "title": "Temporary content item #%s for unittesting" % slug,
@@ -147,11 +147,11 @@ class StoryAndPhotoTest(BaseP2PTest):
             "title": "Test HTML story"
         })
 
-    def test_create_or_update_content_item_with_topics(self):
-        topics = ["PEBSL000163", "PEPLT007433"]
+    def test_update_content_item_with_topics(self):
+        topics = [u'PEBSL000163', "PEPLT007433"]
 
         # Add topics to the story
-        self.p2p.create_or_update_content_item({
+        self.p2p.update_content_item({
             "add_topic_ids": topics,
             "content_item": {
                 "slug": self.first_test_story_slug,
@@ -164,11 +164,12 @@ class StoryAndPhotoTest(BaseP2PTest):
 
         # Make sure the topics were added correctly
         data = self.p2p.get_fancy_content_item(self.first_test_story_slug, query=query)
+
         content_topics = data["content_topics"]
         self.assertEqual(len(content_topics), 2)
 
         # Now let's remove the topics
-        self.p2p.create_or_update_content_item({
+        self.p2p.update_content_item({
             "remove_topic_ids": topics,
             "content_item": {
                 "slug": self.first_test_story_slug,
